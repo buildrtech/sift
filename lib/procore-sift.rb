@@ -16,7 +16,7 @@ module Sift
   extend ActiveSupport::Concern
 
   def filtrate(collection)
-    Filtrator.filter(collection, params, filters)
+    Filtrator.filter(collection, params, sift_filters)
   end
 
   def filter_params
@@ -24,7 +24,7 @@ module Sift
   end
 
   def sort_params
-    params.fetch(:sort, "").split(",") if filters.any? { |filter| filter.is_a?(Sort) }
+    params.fetch(:sort, "").split(",") if sift_filters.any? { |filter| filter.is_a?(Sort) }
   end
 
   def filters_valid?
@@ -39,23 +39,23 @@ module Sift
 
   def filter_validator
     @_filter_validator ||= FilterValidator.build(
-      filters: filters,
+      filters: sift_filters,
       sort_fields: sort_fields,
       filter_params: filter_params,
       sort_params: sort_params,
     )
   end
 
-  def filters
+  def sift_filters
     self.class.ancestors
       .take_while { |klass| klass.name != "Sift" }
-      .flat_map { |klass| klass.try(:filters) }
+      .flat_map { |klass| klass.try(:sift_filters) }
       .compact
       .uniq { |f| [f.param, f.class] }
   end
 
   def sorts_exist?
-    filters.any? { |filter| filter.is_a?(Sort) }
+    sift_filters.any? { |filter| filter.is_a?(Sort) }
   end
 
   def sort_fields
@@ -67,16 +67,16 @@ module Sift
 
   class_methods do
     def filter_on(parameter, type:, internal_name: parameter, default: nil, validate: nil, scope_params: [], tap: nil)
-      filters << Filter.new(parameter, type, internal_name, default, validate, scope_params, tap)
+      sift_filters << Filter.new(parameter, type, internal_name, default, validate, scope_params, tap)
     end
 
-    def filters
-      @_filters ||= []
+    def sift_filters
+      @_sift_filters ||= []
     end
 
     # TODO: this is only used in tests, can I kill it?
     def reset_filters
-      @_filters = []
+      @_sift_filters = []
     end
 
     def sort_fields
@@ -84,7 +84,7 @@ module Sift
     end
 
     def sort_on(parameter, type:, internal_name: parameter, scope_params: [])
-      filters << Sort.new(parameter, type, internal_name, scope_params)
+      sift_filters << Sort.new(parameter, type, internal_name, scope_params)
       sort_fields << parameter.to_s
       sort_fields << "-#{parameter}"
     end

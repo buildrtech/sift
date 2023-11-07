@@ -75,7 +75,7 @@ module Sift
     end
 
     # TODO: this is only used in tests, can I kill it?
-    def reset_filters
+    def reset_sift_filters
       @_sift_filters = []
     end
 

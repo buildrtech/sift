@@ -2,14 +2,15 @@ module Sift
   # Filter describes the way a parameter maps to a database column
   # and the type information helpful for validating input.
   class Filter
-    attr_reader :parameter, :default, :custom_validate, :scope_params
+    attr_reader :parameter, :default, :custom_validate, :scope_params, :options
 
-    def initialize(param, type, internal_name, default, custom_validate = nil, scope_params = [], tap = ->(value, _params) { value })
+    def initialize(param, type, internal_name, default, custom_validate = nil, scope_params = [], tap = ->(value, _params) { value }, **options)
       @parameter = Parameter.new(param, type, internal_name)
       @default = default
       @custom_validate = custom_validate
       @scope_params = scope_params
       @tap = tap
+      @options = options
       raise ArgumentError, "scope_params must be an array of symbols" unless valid_scope_params?(scope_params)
       raise "unknown filter type: #{type}" unless type_validator.valid_type?
     end
@@ -59,7 +60,8 @@ module Sift
     end
 
     def not_processable?(value)
-      value.nil? && default.nil?
+      (value.nil? && default.nil?) ||
+        options[:if].present? && !options[:if].call(value)
     end
 
     def should_apply_default?(value)

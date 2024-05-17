@@ -21,7 +21,7 @@ module Sift
 
     # rubocop:disable Lint/UnusedMethodArgument
     def apply!(collection, value:, active_sorts_hash:, params: {})
-      if not_processable?(value)
+      if not_processable?(value, params)
         collection
       elsif should_apply_default?(value)
         default.call(collection)
@@ -59,9 +59,9 @@ module Sift
       ValueParser.new(value: value, type: parameter.type, options: parameter.parse_options).parse
     end
 
-    def not_processable?(value)
+    def not_processable?(value, params)
       (value.nil? && default.nil?) ||
-        options[:if].present? && !options[:if].call(value)
+        options[:if].present? && !options[:if].call(value, params)
     end
 
     def should_apply_default?(value)
